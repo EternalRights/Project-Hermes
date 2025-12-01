@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  web:
+    build: ./hermes-web
+    ports:
+      - "8080:80"
+    depends_on:
+      - server
+    networks:
+      - hermes-network
+
+  server:
+    build: ./hermes-server
+    ports:
+      - "5000:5000"
+    environment:
+      - DATABASE_URL=mysql://root:password@mysql:3306/hermes
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - hermes-network
+
+  worker:
+    build: ./hermes-worker
+    command: celery -A worker.celery_app worker --loglevel=info
+    depends_on:
+      - redis
+      - mysql
+    networks:
+      - hermes-network
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: hermes
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - hermes-network
+
+  redis:
+    image: redis:alpine
+    networks:
+      - hermes-network
+
+  jmeter:
+    image: justb4/jmeter
+    volumes:
+      - ./jmx:/jmx
+    networks:
+      - hermes-network
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - hermes-network
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - hermes-network
+
+volumes:
+  mysql_data:
+
+networks:
+  hermes-network:
+    driver: bridge
