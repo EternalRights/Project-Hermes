@@ -1,0 +1,4 @@
+celery>=5.3
+redis>=5.0
+requests>=2.31
+pymysql>=1.1
