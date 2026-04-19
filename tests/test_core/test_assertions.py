@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from hermes_core.assertions.engine import AssertionEngine, AssertionResult
+from hermes_core.assertions.engine import AssertionEngine, AssertionResult, _compare
 
 
 @pytest.fixture
@@ -117,3 +117,73 @@ def test_run_assertions(engine, mock_response):
     results = engine.run_assertions(mock_response, config)
     assert len(results) == 5
     assert all(r.passed for r in results)
+
+
+def test_compare_unsupported_operator():
+    result, msg = _compare(1, 2, "unknown_op")
+    assert result is False
+    assert msg == "Unsupported comparison: unknown_op"
+
+
+def test_run_assertions_unknown_type(engine):
+    results = engine.run_assertions(MagicMock(), [{"type": "unknown_type"}])
+    assert len(results) == 1
+    assert results[0].passed is False
+    assert "Unknown assertion type" in results[0].message
+
+
+def test_assert_json_path_no_matches(engine, mock_response):
+    result = engine.assert_json_path(mock_response, "$.nonexistent", "value", "eq")
+    assert result.passed is False
+    assert "found no matches" in result.message
+
+
+def test_assert_regex_invalid_pattern(engine):
+    result = engine.assert_regex("test", "[invalid", True)
+    assert result.passed is False
+
+
+def test_assert_schema_nested_object(engine):
+    schema = {
+        "type": "object",
+        "properties": {
+            "data": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "integer"},
+                    "name": {"type": "string"},
+                },
+                "required": ["id", "name"],
+            }
+        },
+        "required": ["data"],
+    }
+    valid_data = {"data": {"id": 1, "name": "test"}}
+    result = engine.assert_schema(valid_data, schema)
+    assert result.passed is True
+
+    invalid_data = {"data": {"id": "not_int", "name": "test"}}
+    result = engine.assert_schema(invalid_data, schema)
+    assert result.passed is False
+
+
+def test_assert_json_path_comparison_operators(engine, mock_response):
+    result = engine.assert_json_path(mock_response, "$.data.name", "other", "neq")
+    assert result.passed is True
+
+    result = engine.assert_json_path(mock_response, "$.data.id", 0, "gt")
+    assert result.passed is True
+
+    result = engine.assert_json_path(mock_response, "$.data.id", 2, "lt")
+    assert result.passed is True
+
+    result = engine.assert_json_path(mock_response, "$.data.name", "herm", "contains")
+    assert result.passed is True
+
+
+def test_assert_status_code_repr():
+    result = AssertionResult(passed=True, assertion_type="status_code", expected=200, actual=200, message="")
+    repr_str = repr(result)
+    assert "PASS" in repr_str
+    assert "status_code" in repr_str
+    assert "200" in repr_str

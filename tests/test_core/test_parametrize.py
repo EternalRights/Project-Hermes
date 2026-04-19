@@ -114,3 +114,68 @@ def test_builtin_functions_timestamp():
     val = BuiltinFunctions.timestamp()
     after = int(time.time())
     assert before <= val <= after
+
+
+def test_builtin_functions_random_string():
+    val = BuiltinFunctions.random_string(16)
+    assert isinstance(val, str)
+    assert len(val) == 16
+    import string as string_mod
+    allowed = set(string_mod.ascii_letters + string_mod.digits)
+    assert all(c in allowed for c in val)
+
+
+def test_builtin_functions_hmac_sha256():
+    val = BuiltinFunctions.hmac_sha256("secret", "message")
+    assert isinstance(val, str)
+    assert len(val) == 64
+    try:
+        int(val, 16)
+    except ValueError:
+        pytest.fail("hmac_sha256 output is not a valid hex string")
+
+
+def test_builtin_functions_base64_encode():
+    val = BuiltinFunctions.base64_encode("hello")
+    assert isinstance(val, str)
+    import base64
+    assert val == base64.b64encode(b"hello").decode("utf-8")
+
+
+def test_builtin_functions_base64_decode():
+    encoded = BuiltinFunctions.base64_encode("test data")
+    decoded = BuiltinFunctions.base64_decode(encoded)
+    assert decoded == "test data"
+
+
+def test_builtin_functions_date_format():
+    val = BuiltinFunctions.date_format("%Y-%m-%d")
+    assert isinstance(val, str)
+    import re as re_mod
+    assert re_mod.match(r"\d{4}-\d{2}-\d{2}", val)
+
+
+def test_builtin_functions_now_iso():
+    val = BuiltinFunctions.now_iso()
+    assert isinstance(val, str)
+    assert "T" in val
+
+
+def test_template_render_unknown_function(renderer):
+    with pytest.raises(ValueError, match="Unknown function"):
+        renderer.render("{{nonexistent_func()}}", {})
+
+
+def test_template_render_unresolved_variable(renderer):
+    template = "Hello, {{unknown_var}}!"
+    result = renderer.render(template, {})
+    assert result == "Hello, {{unknown_var}}!"
+
+
+def test_functions_registry():
+    expected = {
+        "random_int", "random_string", "timestamp", "uuid",
+        "md5", "hmac_sha256", "base64_encode", "base64_decode",
+        "date_format", "now_iso",
+    }
+    assert set(FUNCTIONS.keys()) == expected

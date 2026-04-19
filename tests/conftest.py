@@ -5,32 +5,57 @@ import types
 import pytest
 
 
-HERMES_CORE_DIR = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "hermes-core")
-)
-if HERMES_CORE_DIR not in sys.path:
-    sys.path.insert(0, HERMES_CORE_DIR)
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
-if "hermes_core" not in sys.modules:
-    _hermes_core_ns = types.ModuleType("hermes_core")
-    _hermes_core_ns.__path__ = [HERMES_CORE_DIR]
-    _hermes_core_ns.__package__ = "hermes_core"
-    _hermes_core_ns.__version__ = "0.1.0"
-    sys.modules["hermes_core"] = _hermes_core_ns
+HERMES_CORE_DIR = os.path.join(PROJECT_ROOT, "hermes-core")
+HERMES_SERVER_DIR = os.path.join(PROJECT_ROOT, "hermes-server")
+HERMES_WORKER_DIR = os.path.join(PROJECT_ROOT, "hermes-worker")
 
-    _sub_packages = [
-        "assertions", "executor", "parametrize", "scheduler", "tracing", "utils"
-    ]
-    for _pkg in _sub_packages:
-        _full = f"hermes_core.{_pkg}"
-        if _full not in sys.modules:
-            _pkg_dir = os.path.join(HERMES_CORE_DIR, _pkg)
-            if os.path.isdir(_pkg_dir):
-                _mod = types.ModuleType(_full)
-                _mod.__path__ = [_pkg_dir]
-                _mod.__package__ = _full
-                sys.modules[_full] = _mod
-                setattr(_hermes_core_ns, _pkg, _mod)
+
+def _ensure_path(directory):
+    if directory not in sys.path:
+        sys.path.insert(0, directory)
+
+
+def _register_namespace(name, directory, sub_packages=None):
+    if name not in sys.modules:
+        ns = types.ModuleType(name)
+        ns.__path__ = [directory]
+        ns.__package__ = name
+        ns.__version__ = "0.1.0"
+        sys.modules[name] = ns
+    else:
+        ns = sys.modules[name]
+
+    if sub_packages:
+        for pkg in sub_packages:
+            full = f"{name}.{pkg}"
+            if full not in sys.modules:
+                pkg_dir = os.path.join(directory, pkg)
+                if os.path.isdir(pkg_dir):
+                    mod = types.ModuleType(full)
+                    mod.__path__ = [pkg_dir]
+                    mod.__package__ = full
+                    sys.modules[full] = mod
+                    setattr(ns, pkg, mod)
+
+    return ns
+
+
+_ensure_path(HERMES_CORE_DIR)
+_register_namespace("hermes_core", HERMES_CORE_DIR, [
+    "assertions", "executor", "parametrize", "scheduler", "tracing", "utils",
+])
+
+_ensure_path(HERMES_SERVER_DIR)
+_register_namespace("hermes_server", HERMES_SERVER_DIR, [
+    "api", "app", "config", "middleware", "models", "services",
+])
+
+_ensure_path(HERMES_WORKER_DIR)
+_register_namespace("hermes_worker", HERMES_WORKER_DIR, [
+    "tasks",
+])
 
 
 @pytest.fixture(scope="session")
