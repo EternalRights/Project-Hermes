@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from hermes_server.app import db
 
@@ -16,8 +16,8 @@ class ScheduledTask(db.Model):
     last_run_at = db.Column(db.DateTime)
     next_run_at = db.Column(db.DateTime)
     created_by = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
     project = db.relationship("Project", backref=db.backref("scheduled_tasks", lazy="dynamic"))
     suite = db.relationship("TestSuite", backref=db.backref("scheduled_tasks", lazy="dynamic"))

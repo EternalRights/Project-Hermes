@@ -2,7 +2,7 @@ import time
 import json
 import logging
 import requests
-from datetime import datetime
+from datetime import datetime, timezone
 
 from hermes_worker.celery_app import celery_app
 
@@ -141,7 +141,7 @@ def execute_test_case(self, case_id, environment_id):
         execution.environment_id = environment_id
         execution.status = 'running'
         execution.created_by = case.created_by
-        execution.started_at = datetime.utcnow()
+        execution.started_at = datetime.now(timezone.utc)
         db.session.add(execution)
         db.session.commit()
 
@@ -191,7 +191,7 @@ def execute_test_case(self, case_id, environment_id):
         step_result.case_id = case.id
         step_result.case_name = case.name
         step_result.status = 'running'
-        step_result.started_at = datetime.utcnow()
+        step_result.started_at = datetime.now(timezone.utc)
         db.session.add(step_result)
         db.session.commit()
 
@@ -202,7 +202,7 @@ def execute_test_case(self, case_id, environment_id):
 
             step_result.status = result.status
             step_result.response_time = result.duration
-            step_result.finished_at = datetime.utcnow()
+            step_result.finished_at = datetime.now(timezone.utc)
 
             if result.response:
                 step_result.response_status_code = result.response.status_code
@@ -237,7 +237,7 @@ def execute_test_case(self, case_id, environment_id):
         except Exception as e:
             step_result.status = 'error'
             step_result.error_message = str(e)
-            step_result.finished_at = datetime.utcnow()
+            step_result.finished_at = datetime.now(timezone.utc)
             execution.pass_count = 0
             execution.fail_count = 0
             execution.error_count = 1
@@ -247,7 +247,7 @@ def execute_test_case(self, case_id, environment_id):
         elapsed = time.time() - start_time
         execution.total_count = 1
         execution.duration = elapsed
-        execution.finished_at = datetime.utcnow()
+        execution.finished_at = datetime.now(timezone.utc)
 
         if execution.error_count > 0:
             execution.status = 'error'
@@ -285,20 +285,20 @@ def execute_test_suite(self, execution_id, suite_id, environment_id):
             return
 
         execution.status = 'running'
-        execution.started_at = datetime.utcnow()
+        execution.started_at = datetime.now(timezone.utc)
         db.session.commit()
 
         suite = db.session.get(TestSuite, suite_id)
         if suite is None:
             execution.status = 'error'
-            execution.finished_at = datetime.utcnow()
+            execution.finished_at = datetime.now(timezone.utc)
             db.session.commit()
             return
 
         environment = db.session.get(Environment, environment_id)
         if environment is None:
             execution.status = 'error'
-            execution.finished_at = datetime.utcnow()
+            execution.finished_at = datetime.now(timezone.utc)
             db.session.commit()
             return
 
@@ -371,7 +371,7 @@ def execute_test_suite(self, execution_id, suite_id, environment_id):
             step_result.case_id = case.id
             step_result.case_name = case.name
             step_result.status = 'running'
-            step_result.started_at = datetime.utcnow()
+            step_result.started_at = datetime.now(timezone.utc)
             db.session.add(step_result)
             db.session.commit()
 
@@ -380,7 +380,7 @@ def execute_test_suite(self, execution_id, suite_id, environment_id):
 
                 step_result.status = result.status
                 step_result.response_time = result.duration
-                step_result.finished_at = datetime.utcnow()
+                step_result.finished_at = datetime.now(timezone.utc)
 
                 if result.response:
                     step_result.response_status_code = result.response.status_code
@@ -413,7 +413,7 @@ def execute_test_suite(self, execution_id, suite_id, environment_id):
             except Exception as e:
                 step_result.status = 'error'
                 step_result.error_message = str(e)
-                step_result.finished_at = datetime.utcnow()
+                step_result.finished_at = datetime.now(timezone.utc)
                 error_count += 1
 
             db.session.commit()
@@ -425,7 +425,7 @@ def execute_test_suite(self, execution_id, suite_id, environment_id):
         execution.fail_count = fail_count
         execution.error_count = error_count
         execution.duration = elapsed
-        execution.finished_at = datetime.utcnow()
+        execution.finished_at = datetime.now(timezone.utc)
 
         if error_count > 0:
             execution.status = 'error'
@@ -468,7 +468,7 @@ def execute_scheduled_task(self, scheduled_task_id):
         db.session.add(execution)
         db.session.commit()
 
-        scheduled_task.last_run_at = datetime.utcnow()
+        scheduled_task.last_run_at = datetime.now(timezone.utc)
         db.session.commit()
 
         execute_test_suite.delay(execution.id, scheduled_task.suite_id, scheduled_task.environment_id)

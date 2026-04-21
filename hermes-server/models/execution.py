@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from hermes_server.app import db
 
@@ -20,7 +20,7 @@ class TestExecution(db.Model):
     started_at = db.Column(db.DateTime)
     finished_at = db.Column(db.DateTime)
     created_by = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
 
     plan = db.relationship("TestPlan", backref=db.backref("executions", lazy="dynamic"))
     suite = db.relationship("TestSuite", backref=db.backref("executions", lazy="dynamic"))

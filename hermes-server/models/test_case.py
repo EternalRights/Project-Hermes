@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from hermes_server.app import db
 
@@ -22,8 +22,8 @@ class TestCase(db.Model):
     retry_config = db.Column(db.JSON)
     timeout = db.Column(db.Integer, default=30000)
     created_by = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
     project = db.relationship("Project", backref=db.backref("test_cases", lazy="dynamic"))
     creator = db.relationship("User", backref=db.backref("created_test_cases", lazy="dynamic"))
@@ -61,8 +61,8 @@ class TestSuite(db.Model):
     description = db.Column(db.Text)
     execution_mode = db.Column(db.Enum("serial", "parallel", name="execution_mode_enum"), default="serial")
     created_by = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
     project = db.relationship("Project", backref=db.backref("test_suites", lazy="dynamic"))
     creator = db.relationship("User", backref=db.backref("created_test_suites", lazy="dynamic"))
@@ -91,8 +91,8 @@ class TestPlan(db.Model):
     environment_id = db.Column(db.Integer, db.ForeignKey("environment.id"), nullable=False)
     schedule_config = db.Column(db.JSON)
     created_by = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
     project = db.relationship("Project", backref=db.backref("test_plans", lazy="dynamic"))
     suite = db.relationship("TestSuite", backref=db.backref("test_plans", lazy="dynamic"))

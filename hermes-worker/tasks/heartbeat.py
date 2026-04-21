@@ -1,7 +1,7 @@
 import json
 import socket
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 import redis
 
@@ -25,7 +25,7 @@ def heartbeat(self):
         'worker_name': worker_name,
         'worker_id': worker_id,
         'status': 'alive',
-        'timestamp': datetime.utcnow().isoformat(),
+        'timestamp': datetime.now(timezone.utc).isoformat(),
     }
 
     try:

@@ -51,7 +51,7 @@ def create_project():
 @jwt_required()
 @require_permission('project:read')
 def get_project(project_id):
-    project = Project.query.get(project_id)
+    project = db.session.get(Project, project_id)
     if not project or not project.is_active:
         return error_response(message='project not found', code=404), 404
 
@@ -62,7 +62,7 @@ def get_project(project_id):
 @jwt_required()
 @require_permission('project:update')
 def update_project(project_id):
-    project = Project.query.get(project_id)
+    project = db.session.get(Project, project_id)
     if not project or not project.is_active:
         return error_response(message='project not found', code=404), 404
 
@@ -82,7 +82,7 @@ def update_project(project_id):
 @jwt_required()
 @require_permission('project:delete')
 def delete_project(project_id):
-    project = Project.query.get(project_id)
+    project = db.session.get(Project, project_id)
     if not project or not project.is_active:
         return error_response(message='project not found', code=404), 404
 

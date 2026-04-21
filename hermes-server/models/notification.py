@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from hermes_server.app import db
 
@@ -13,7 +13,7 @@ class NotificationConfig(db.Model):
     config = db.Column(db.JSON)
     trigger_condition = db.Column(db.JSON)
     is_enabled = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
     project = db.relationship("Project", backref=db.backref("notification_configs", lazy="dynamic"))

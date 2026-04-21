@@ -86,7 +86,7 @@ def create_test_case():
 @jwt_required()
 @require_permission('test_case:read')
 def get_test_case(case_id):
-    case = TestCase.query.get(case_id)
+    case = db.session.get(TestCase, case_id)
     if not case:
         return jsonify(error_response(message='test case not found', code=404)), 404
     return jsonify(success_response(data=case.to_dict()))
@@ -96,7 +96,7 @@ def get_test_case(case_id):
 @jwt_required()
 @require_permission('test_case:update')
 def update_test_case(case_id):
-    case = TestCase.query.get(case_id)
+    case = db.session.get(TestCase, case_id)
     if not case:
         return jsonify(error_response(message='test case not found', code=404)), 404
 
@@ -120,8 +120,9 @@ def update_test_case(case_id):
 
 @bp.route('/<int:case_id>', methods=['DELETE'])
 @jwt_required()
+@require_permission('test_case:delete')
 def delete_test_case(case_id):
-    case = TestCase.query.get(case_id)
+    case = db.session.get(TestCase, case_id)
     if not case:
         return jsonify(error_response(message='test case not found', code=404)), 404
 
@@ -170,7 +171,7 @@ def get_tags():
 @bp.route('/<int:case_id>/tags', methods=['PUT'])
 @jwt_required()
 def update_test_case_tags(case_id):
-    case = TestCase.query.get(case_id)
+    case = db.session.get(TestCase, case_id)
     if not case:
         return jsonify(error_response(message='test case not found', code=404)), 404
 
@@ -186,7 +187,7 @@ def update_test_case_tags(case_id):
 @bp.route('/<int:case_id>/copy', methods=['POST'])
 @jwt_required()
 def copy_test_case(case_id):
-    case = TestCase.query.get(case_id)
+    case = db.session.get(TestCase, case_id)
     if not case:
         return jsonify(error_response(message='test case not found', code=404)), 404
 

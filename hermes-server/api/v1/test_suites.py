@@ -4,12 +4,14 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from hermes_server.app import db
 from hermes_server.models.test_case import TestSuite, TestSuiteCase, TestCase
 from hermes_server.app.response import success_response, error_response, paginate_response
+from hermes_server.middleware.permission import require_permission
 
 bp = Blueprint('test_suites', __name__, url_prefix='/api/v1/test-suites')
 
 
 @bp.route('', methods=['GET'])
 @jwt_required()
+@require_permission('test_suite:read')
 def get_test_suites():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
@@ -40,6 +42,7 @@ def get_test_suites():
 
 @bp.route('', methods=['POST'])
 @jwt_required()
+@require_permission('test_suite:create')
 def create_test_suite():
     data = request.get_json()
     if not data:
@@ -77,8 +80,9 @@ def create_test_suite():
 
 @bp.route('/<int:suite_id>', methods=['GET'])
 @jwt_required()
+@require_permission('test_suite:read')
 def get_test_suite(suite_id):
-    suite = TestSuite.query.get(suite_id)
+    suite = db.session.get(TestSuite, suite_id)
     if not suite:
         return jsonify(error_response(message='test suite not found', code=404)), 404
 
@@ -110,8 +114,9 @@ def get_test_suite(suite_id):
 
 @bp.route('/<int:suite_id>', methods=['PUT'])
 @jwt_required()
+@require_permission('test_suite:update')
 def update_test_suite(suite_id):
-    suite = TestSuite.query.get(suite_id)
+    suite = db.session.get(TestSuite, suite_id)
     if not suite:
         return jsonify(error_response(message='test suite not found', code=404)), 404
 
@@ -141,8 +146,9 @@ def update_test_suite(suite_id):
 
 @bp.route('/<int:suite_id>', methods=['DELETE'])
 @jwt_required()
+@require_permission('test_suite:delete')
 def delete_test_suite(suite_id):
-    suite = TestSuite.query.get(suite_id)
+    suite = db.session.get(TestSuite, suite_id)
     if not suite:
         return jsonify(error_response(message='test suite not found', code=404)), 404
 
@@ -155,7 +161,7 @@ def delete_test_suite(suite_id):
 @bp.route('/<int:suite_id>/cases', methods=['POST'])
 @jwt_required()
 def add_case_to_suite(suite_id):
-    suite = TestSuite.query.get(suite_id)
+    suite = db.session.get(TestSuite, suite_id)
     if not suite:
         return jsonify(error_response(message='test suite not found', code=404)), 404
 
@@ -167,7 +173,7 @@ def add_case_to_suite(suite_id):
     if case_id is None:
         return jsonify(error_response(message='case_id is required')), 400
 
-    case = TestCase.query.get(case_id)
+    case = db.session.get(TestCase, case_id)
     if not case:
         return jsonify(error_response(message='test case not found', code=404)), 404
 
@@ -197,7 +203,7 @@ def add_case_to_suite(suite_id):
 @bp.route('/<int:suite_id>/cases/<int:case_id>', methods=['DELETE'])
 @jwt_required()
 def remove_case_from_suite(suite_id, case_id):
-    suite = TestSuite.query.get(suite_id)
+    suite = db.session.get(TestSuite, suite_id)
     if not suite:
         return jsonify(error_response(message='test suite not found', code=404)), 404
 
@@ -213,7 +219,7 @@ def remove_case_from_suite(suite_id, case_id):
 @bp.route('/<int:suite_id>/cases/reorder', methods=['PUT'])
 @jwt_required()
 def reorder_suite_cases(suite_id):
-    suite = TestSuite.query.get(suite_id)
+    suite = db.session.get(TestSuite, suite_id)
     if not suite:
         return jsonify(error_response(message='test suite not found', code=404)), 404
 
@@ -242,7 +248,7 @@ def reorder_suite_cases(suite_id):
 @bp.route('/<int:suite_id>/cases/<int:case_id>/toggle', methods=['PUT'])
 @jwt_required()
 def toggle_suite_case(suite_id, case_id):
-    suite = TestSuite.query.get(suite_id)
+    suite = db.session.get(TestSuite, suite_id)
     if not suite:
         return jsonify(error_response(message='test suite not found', code=404)), 404
 

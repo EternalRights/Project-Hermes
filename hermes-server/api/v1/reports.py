@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, request, make_response
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -8,14 +8,16 @@ from hermes_server.app import db
 from hermes_server.app.response import success_response, error_response
 from hermes_server.models.execution import TestExecution, TestStepResult
 from hermes_core.utils.html_escape import html_escape
+from hermes_server.middleware.permission import require_permission
 
 bp = Blueprint('reports', __name__, url_prefix='/api/v1/reports')
 
 
 @bp.route('/<int:execution_id>', methods=['GET'])
 @jwt_required()
+@require_permission('report:read')
 def get_report(execution_id):
-    execution = TestExecution.query.get(execution_id)
+    execution = db.session.get(TestExecution, execution_id)
     if not execution:
         return error_response(message='execution not found', code=404), 404
 
@@ -80,6 +82,7 @@ def get_report(execution_id):
 
 @bp.route('/trend', methods=['GET'])
 @jwt_required()
+@require_permission('report:read')
 def get_trend():
     suite_id = request.args.get('suite_id', type=int)
     days = request.args.get('days', 30, type=int)
@@ -87,7 +90,7 @@ def get_trend():
     if not suite_id:
         return error_response(message='suite_id is required', code=400), 400
 
-    start_date = datetime.utcnow() - timedelta(days=days)
+    start_date = datetime.now(timezone.utc) - timedelta(days=days)
 
     daily_stats = db.session.query(
         func.date(TestExecution.created_at).label('date'),
@@ -146,8 +149,9 @@ def get_trend():
 
 @bp.route('/<int:execution_id>/export', methods=['GET'])
 @jwt_required()
+@require_permission('report:read')
 def export_report(execution_id):
-    execution = TestExecution.query.get(execution_id)
+    execution = db.session.get(TestExecution, execution_id)
     if not execution:
         return error_response(message='execution not found', code=404), 404
 

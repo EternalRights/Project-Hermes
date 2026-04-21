@@ -5,12 +5,14 @@ from hermes_server.app import db
 from hermes_server.app.response import success_response, error_response, paginate_response
 from hermes_server.models.scheduled_task import ScheduledTask
 from hermes_server.models.execution import TestExecution
+from hermes_server.middleware.permission import require_permission
 
 bp = Blueprint('scheduled_tasks', __name__, url_prefix='/api/v1/scheduled-tasks')
 
 
 @bp.route('', methods=['GET'])
 @jwt_required()
+@require_permission('scheduled_task:read')
 def get_scheduled_tasks():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
@@ -44,6 +46,7 @@ def get_scheduled_tasks():
 
 @bp.route('', methods=['POST'])
 @jwt_required()
+@require_permission('scheduled_task:create')
 def create_scheduled_task():
     user_id = get_jwt_identity()
     body = request.get_json(silent=True) or {}
@@ -83,8 +86,9 @@ def create_scheduled_task():
 
 @bp.route('/<int:task_id>', methods=['GET'])
 @jwt_required()
+@require_permission('scheduled_task:read')
 def get_scheduled_task(task_id):
-    task = ScheduledTask.query.get(task_id)
+    task = db.session.get(ScheduledTask, task_id)
     if not task:
         return error_response(message='scheduled task not found', code=404), 404
 
@@ -106,8 +110,9 @@ def get_scheduled_task(task_id):
 
 @bp.route('/<int:task_id>', methods=['PUT'])
 @jwt_required()
+@require_permission('scheduled_task:update')
 def update_scheduled_task(task_id):
-    task = ScheduledTask.query.get(task_id)
+    task = db.session.get(ScheduledTask, task_id)
     if not task:
         return error_response(message='scheduled task not found', code=404), 404
 
@@ -144,8 +149,9 @@ def update_scheduled_task(task_id):
 
 @bp.route('/<int:task_id>', methods=['DELETE'])
 @jwt_required()
+@require_permission('scheduled_task:delete')
 def delete_scheduled_task(task_id):
-    task = ScheduledTask.query.get(task_id)
+    task = db.session.get(ScheduledTask, task_id)
     if not task:
         return error_response(message='scheduled task not found', code=404), 404
 
@@ -157,8 +163,9 @@ def delete_scheduled_task(task_id):
 
 @bp.route('/<int:task_id>/toggle', methods=['PUT'])
 @jwt_required()
+@require_permission('scheduled_task:update')
 def toggle_scheduled_task(task_id):
-    task = ScheduledTask.query.get(task_id)
+    task = db.session.get(ScheduledTask, task_id)
     if not task:
         return error_response(message='scheduled task not found', code=404), 404
 
@@ -179,8 +186,9 @@ def toggle_scheduled_task(task_id):
 
 @bp.route('/<int:task_id>/history', methods=['GET'])
 @jwt_required()
+@require_permission('scheduled_task:read')
 def get_scheduled_task_history(task_id):
-    task = ScheduledTask.query.get(task_id)
+    task = db.session.get(ScheduledTask, task_id)
     if not task:
         return error_response(message='scheduled task not found', code=404), 404
 

@@ -4,14 +4,16 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from hermes_server.app import db
 from hermes_server.app.response import success_response, error_response, paginate_response
 from hermes_server.models.project import Project, GlobalVariable
+from hermes_server.middleware.permission import require_permission
 
 bp = Blueprint('variables', __name__, url_prefix='/api/v1/projects/<int:project_id>/variables')
 
 
 @bp.route('', methods=['GET'])
 @jwt_required()
+@require_permission('variable:read')
 def get_variables(project_id):
-    project = Project.query.get(project_id)
+    project = db.session.get(Project, project_id)
     if not project or not project.is_active:
         return error_response(message='project not found', code=404), 404
 
@@ -31,8 +33,9 @@ def get_variables(project_id):
 
 @bp.route('', methods=['POST'])
 @jwt_required()
+@require_permission('variable:create')
 def create_variable(project_id):
-    project = Project.query.get(project_id)
+    project = db.session.get(Project, project_id)
     if not project or not project.is_active:
         return error_response(message='project not found', code=404), 404
 
@@ -55,8 +58,9 @@ def create_variable(project_id):
 
 @bp.route('/<int:variable_id>', methods=['PUT'])
 @jwt_required()
+@require_permission('variable:update')
 def update_variable(project_id, variable_id):
-    project = Project.query.get(project_id)
+    project = db.session.get(Project, project_id)
     if not project or not project.is_active:
         return error_response(message='project not found', code=404), 404
 
@@ -82,8 +86,9 @@ def update_variable(project_id, variable_id):
 
 @bp.route('/<int:variable_id>', methods=['DELETE'])
 @jwt_required()
+@require_permission('variable:delete')
 def delete_variable(project_id, variable_id):
-    project = Project.query.get(project_id)
+    project = db.session.get(Project, project_id)
     if not project or not project.is_active:
         return error_response(message='project not found', code=404), 404
 

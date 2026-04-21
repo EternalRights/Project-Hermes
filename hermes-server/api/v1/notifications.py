@@ -8,12 +8,14 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from hermes_server.app import db
 from hermes_server.app.response import success_response, error_response, paginate_response
 from hermes_server.models.notification import NotificationConfig
+from hermes_server.middleware.permission import require_permission
 
 bp = Blueprint('notifications', __name__, url_prefix='/api/v1/notifications')
 
 
 @bp.route('', methods=['GET'])
 @jwt_required()
+@require_permission('notification:read')
 def get_notifications():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
@@ -44,6 +46,7 @@ def get_notifications():
 
 @bp.route('', methods=['POST'])
 @jwt_required()
+@require_permission('notification:create')
 def create_notification():
     body = request.get_json(silent=True) or {}
 
@@ -82,8 +85,9 @@ def create_notification():
 
 @bp.route('/<int:notification_id>', methods=['GET'])
 @jwt_required()
+@require_permission('notification:read')
 def get_notification(notification_id):
-    notification = NotificationConfig.query.get(notification_id)
+    notification = db.session.get(NotificationConfig, notification_id)
     if not notification:
         return error_response(message='notification not found', code=404), 404
 
@@ -102,8 +106,9 @@ def get_notification(notification_id):
 
 @bp.route('/<int:notification_id>', methods=['PUT'])
 @jwt_required()
+@require_permission('notification:update')
 def update_notification(notification_id):
-    notification = NotificationConfig.query.get(notification_id)
+    notification = db.session.get(NotificationConfig, notification_id)
     if not notification:
         return error_response(message='notification not found', code=404), 404
 
@@ -139,8 +144,9 @@ def update_notification(notification_id):
 
 @bp.route('/<int:notification_id>', methods=['DELETE'])
 @jwt_required()
+@require_permission('notification:delete')
 def delete_notification(notification_id):
-    notification = NotificationConfig.query.get(notification_id)
+    notification = db.session.get(NotificationConfig, notification_id)
     if not notification:
         return error_response(message='notification not found', code=404), 404
 
@@ -152,8 +158,9 @@ def delete_notification(notification_id):
 
 @bp.route('/<int:notification_id>/test', methods=['POST'])
 @jwt_required()
+@require_permission('notification:update')
 def test_notification(notification_id):
-    notification = NotificationConfig.query.get(notification_id)
+    notification = db.session.get(NotificationConfig, notification_id)
     if not notification:
         return error_response(message='notification not found', code=404), 404
 

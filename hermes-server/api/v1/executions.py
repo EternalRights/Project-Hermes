@@ -6,12 +6,14 @@ from hermes_server.app import db
 from hermes_server.models.execution import TestExecution, TestStepResult
 from hermes_server.models.test_case import TestSuite, TestSuiteCase
 from hermes_server.app.response import success_response, error_response, paginate_response
+from hermes_server.middleware.permission import require_permission
 
 bp = Blueprint('executions', __name__, url_prefix='/api/v1/executions')
 
 
 @bp.route('', methods=['POST'])
 @jwt_required()
+@require_permission('execution:create')
 def create_execution():
     data = request.get_json()
     if not data:
@@ -22,7 +24,7 @@ def create_execution():
     if suite_id is None or environment_id is None:
         return jsonify(error_response(message='suite_id and environment_id are required')), 400
 
-    suite = TestSuite.query.get(suite_id)
+    suite = db.session.get(TestSuite, suite_id)
     if not suite:
         return jsonify(error_response(message='test suite not found', code=404)), 404
 
@@ -57,8 +59,9 @@ def create_execution():
 
 @bp.route('/<int:execution_id>', methods=['GET'])
 @jwt_required()
+@require_permission('execution:read')
 def get_execution(execution_id):
-    execution = TestExecution.query.get(execution_id)
+    execution = db.session.get(TestExecution, execution_id)
     if not execution:
         return jsonify(error_response(message='execution not found', code=404)), 404
 
@@ -104,6 +107,7 @@ def get_execution(execution_id):
 
 @bp.route('', methods=['GET'])
 @jwt_required()
+@require_permission('execution:read')
 def get_executions():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
