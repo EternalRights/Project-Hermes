@@ -70,7 +70,45 @@ def _send_notification(notification_config, execution, suite):
                 }
                 requests.post(webhook, json=msg, timeout=10)
         elif ntype == 'email':
-            pass
+            smtp_host = config.get('smtp_host', '')
+            smtp_port = int(config.get('smtp_port', 587))
+            sender = config.get('sender', '')
+            receivers = config.get('receivers', [])
+            use_tls = config.get('use_tls', True)
+            username = config.get('smtp_username', '')
+            password = config.get('smtp_password', '')
+
+            if not smtp_host or not sender or not receivers:
+                logger.warning('Email notification config incomplete: %s', notification_config.id)
+                continue
+
+            subject = f"[Hermes] Test Execution {'Passed' if execution.status == 'success' else 'Failed'}"
+            body = f"Execution ID: {execution.id}\nStatus: {execution.status}\n"
+            if execution.duration:
+                body += f"Duration: {execution.duration:.2f}s\n"
+
+            try:
+                import smtplib
+                from email.mime.text import MIMEText
+                msg = MIMEText(body)
+                msg['Subject'] = subject
+                msg['From'] = sender
+                msg['To'] = ', '.join(receivers) if isinstance(receivers, list) else receivers
+
+                if use_tls:
+                    server = smtplib.SMTP(smtp_host, smtp_port)
+                    server.starttls()
+                else:
+                    server = smtplib.SMTP(smtp_host, smtp_port)
+
+                if username and password:
+                    server.login(username, password)
+
+                server.sendmail(sender, receivers if isinstance(receivers, list) else [receivers], msg.as_string())
+                server.quit()
+                logger.info('Email notification sent for execution %s', execution.id)
+            except Exception as e:
+                logger.error('Failed to send email notification: %s', str(e))
     except Exception as e:
         logger.error('Notification send failed: %s', str(e))
 

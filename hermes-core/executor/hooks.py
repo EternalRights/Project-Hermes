@@ -1,4 +1,20 @@
+import ast
+import threading
 import time
+
+FORBIDDEN_AST_NODES = (ast.Import, ast.ImportFrom)
+
+DANGEROUS_ATTRS = {'__globals__', '__code__', '__bases__', '__subclasses__', '__class__', '__mro__'}
+
+
+def _validate_script(script_content):
+    tree = ast.parse(script_content)
+    for node in ast.walk(tree):
+        if isinstance(node, FORBIDDEN_AST_NODES):
+            raise ValueError(f"Forbidden AST node: {type(node).__name__}")
+        if isinstance(node, ast.Attribute) and node.attr in DANGEROUS_ATTRS:
+            raise ValueError(f"Access to dangerous attribute: {node.attr}")
+    return tree
 
 
 class HookExecutor:
@@ -27,8 +43,8 @@ class HookExecutor:
                 time.sleep(duration)
         return context
 
-    def _run_script(self, script_content, context, response=None):
-        safe_globals = {
+    def _get_safe_globals(self):
+        return {
             "__builtins__": {
                 "int": int,
                 "float": float,
@@ -60,11 +76,36 @@ class HookExecutor:
             },
             "time": time,
         }
+
+    def _run_script(self, script_content, context, response=None, timeout=30):
+        try:
+            _validate_script(script_content)
+        except (SyntaxError, ValueError) as e:
+            context.errors = getattr(context, "errors", [])
+            context.errors.append(str(e))
+            return
+
         local_vars = {"context": context}
         if response is not None:
             local_vars["response"] = response
-        try:
-            exec(script_content, safe_globals, local_vars)
-        except Exception as e:
+
+        result = [None]
+        error = [None]
+
+        def target():
+            try:
+                exec(script_content, self._get_safe_globals(), local_vars)
+            except Exception as e:
+                error[0] = e
+
+        thread = threading.Thread(target=target)
+        thread.daemon = True
+        thread.start()
+        thread.join(timeout=timeout)
+
+        if thread.is_alive():
             context.errors = getattr(context, "errors", [])
-            context.errors.append(str(e))
+            context.errors.append(f"Hook script execution timed out after {timeout}s")
+        elif error[0]:
+            context.errors = getattr(context, "errors", [])
+            context.errors.append(str(error[0]))

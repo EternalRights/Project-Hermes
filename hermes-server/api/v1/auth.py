@@ -1,4 +1,4 @@
-from flask import Blueprint, request
+from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity
 
 from hermes_server.app import db
@@ -65,6 +65,8 @@ def login():
     return success_response(data={
         'access_token': access_token,
         'refresh_token': refresh_token,
+        'token': access_token,
+        'refreshToken': refresh_token,
         'user': {
             'id': user.id,
             'username': user.username,
@@ -80,3 +82,19 @@ def refresh():
     user_id = get_jwt_identity()
     access_token = create_access_token(identity=user_id)
     return success_response(data={'access_token': access_token}), 200
+
+
+@bp.route('/me', methods=['GET'])
+@jwt_required()
+def get_current_user_info():
+    current_user_id = get_jwt_identity()
+    user = db.session.get(User, current_user_id)
+    if not user:
+        return jsonify(error_response('User not found', 404)), 404
+    roles = [{'id': r.id, 'name': r.name} for r in user.roles]
+    return jsonify(success_response({
+        'id': user.id,
+        'username': user.username,
+        'email': user.email,
+        'roles': roles,
+    })), 200

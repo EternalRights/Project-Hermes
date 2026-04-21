@@ -7,6 +7,7 @@ from sqlalchemy import func
 from hermes_server.app import db
 from hermes_server.app.response import success_response, error_response
 from hermes_server.models.execution import TestExecution, TestStepResult
+from hermes_core.utils.html_escape import html_escape
 
 bp = Blueprint('reports', __name__, url_prefix='/api/v1/reports')
 
@@ -162,11 +163,11 @@ def export_report(execution_id):
     for r in step_results:
         status_color = '#52c41a' if r.status == 'pass' else '#ff4d4f' if r.status == 'fail' else '#faad14'
         rows += f'''<tr>
-            <td style="padding:8px;border:1px solid #ddd;">{r.case_name}</td>
-            <td style="padding:8px;border:1px solid #ddd;color:{status_color};font-weight:bold;">{r.status}</td>
+            <td style="padding:8px;border:1px solid #ddd;">{html_escape(r.case_name)}</td>
+            <td style="padding:8px;border:1px solid #ddd;color:{status_color};font-weight:bold;">{html_escape(r.status)}</td>
             <td style="padding:8px;border:1px solid #ddd;">{r.response_status_code or '-'}</td>
             <td style="padding:8px;border:1px solid #ddd;">{r.response_time or 0}ms</td>
-            <td style="padding:8px;border:1px solid #ddd;">{r.error_message or '-'}</td>
+            <td style="padding:8px;border:1px solid #ddd;">{html_escape(r.error_message or '-')}</td>
         </tr>'''
 
     html = f'''<!DOCTYPE html>

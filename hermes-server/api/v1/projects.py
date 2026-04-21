@@ -4,12 +4,14 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from hermes_server.app import db
 from hermes_server.app.response import success_response, error_response, paginate_response
 from hermes_server.models.project import Project
+from hermes_server.middleware.permission import require_permission
 
 bp = Blueprint('projects', __name__, url_prefix='/api/v1/projects')
 
 
 @bp.route('', methods=['GET'])
 @jwt_required()
+@require_permission('project:read')
 def get_projects():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
@@ -27,6 +29,7 @@ def get_projects():
 
 @bp.route('', methods=['POST'])
 @jwt_required()
+@require_permission('project:create')
 def create_project():
     user_id = get_jwt_identity()
     body = request.get_json(silent=True) or {}
@@ -46,6 +49,7 @@ def create_project():
 
 @bp.route('/<int:project_id>', methods=['GET'])
 @jwt_required()
+@require_permission('project:read')
 def get_project(project_id):
     project = Project.query.get(project_id)
     if not project or not project.is_active:
@@ -56,6 +60,7 @@ def get_project(project_id):
 
 @bp.route('/<int:project_id>', methods=['PUT'])
 @jwt_required()
+@require_permission('project:update')
 def update_project(project_id):
     project = Project.query.get(project_id)
     if not project or not project.is_active:
@@ -75,6 +80,7 @@ def update_project(project_id):
 
 @bp.route('/<int:project_id>', methods=['DELETE'])
 @jwt_required()
+@require_permission('project:delete')
 def delete_project(project_id):
     project = Project.query.get(project_id)
     if not project or not project.is_active:

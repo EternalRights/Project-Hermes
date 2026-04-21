@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from celery import Celery
 
+from hermes_worker.celery_app import celery_app
 from hermes_server.app import db
 from hermes_server.models.execution import TestExecution, TestStepResult
 from hermes_server.models.test_case import TestSuite, TestSuiteCase
@@ -39,10 +39,9 @@ def create_execution():
     db.session.add(execution)
     db.session.commit()
 
-    celery = Celery()
-    celery.send_task(
+    celery_app.send_task(
         'hermes_worker.tasks.execute_test_suite',
-        args=[execution.id],
+        args=[execution.id, execution.suite_id, execution.environment_id],
     )
 
     return jsonify(success_response(data={

@@ -1,5 +1,8 @@
 from hermes_server.app import create_app, db
 from hermes_server.models.user import User, Role, Permission
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def seed():
@@ -55,6 +58,7 @@ def seed():
             admin_user = User(username="admin", email="admin@hermes.local", is_active=True)
             admin_user.set_password("admin123")
             db.session.add(admin_user)
+            logger.warning("Default admin user created with default password 'admin123'. Please change it immediately.")
 
         db.session.flush()
 

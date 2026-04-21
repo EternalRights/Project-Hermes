@@ -9,12 +9,14 @@ from hermes_server.app import db
 from hermes_server.models.test_case import TestCase
 from hermes_server.models.data_source import DataSource
 from hermes_server.app.response import success_response, error_response, paginate_response
+from hermes_server.middleware.permission import require_permission
 
 bp = Blueprint('test_cases', __name__, url_prefix='/api/v1/test-cases')
 
 
 @bp.route('', methods=['GET'])
 @jwt_required()
+@require_permission('test_case:read')
 def get_test_cases():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
@@ -43,6 +45,7 @@ def get_test_cases():
 
 @bp.route('', methods=['POST'])
 @jwt_required()
+@require_permission('test_case:create')
 def create_test_case():
     data = request.get_json()
     if not data:
@@ -81,6 +84,7 @@ def create_test_case():
 
 @bp.route('/<int:case_id>', methods=['GET'])
 @jwt_required()
+@require_permission('test_case:read')
 def get_test_case(case_id):
     case = TestCase.query.get(case_id)
     if not case:
@@ -90,6 +94,7 @@ def get_test_case(case_id):
 
 @bp.route('/<int:case_id>', methods=['PUT'])
 @jwt_required()
+@require_permission('test_case:update')
 def update_test_case(case_id):
     case = TestCase.query.get(case_id)
     if not case:

@@ -1,0 +1,30 @@
+- [ ] /api/v1/health endpoint returns 200 with healthy status and database connectivity check
+- [ ] /api/v1/health returns 503 when database is unreachable
+- [ ] Celery task dispatch passes all 3 args (execution_id, suite_id, environment_id)
+- [ ] Celery task dispatch uses shared celery_app instead of creating new instance
+- [ ] Login response includes both access_token/token and refresh_token/refreshToken fields
+- [ ] Frontend refresh token request uses Authorization header
+- [ ] Report HTML export escapes all user-provided strings (XSS prevention verified)
+- [ ] Hook script AST validator rejects Import, ImportFrom, and dangerous Attribute nodes
+- [ ] Hook script execution has timeout control (default 30s)
+- [ ] Application refuses to start with default SECRET_KEY in production mode
+- [ ] GET /api/v1/auth/me returns current user info with valid JWT
+- [ ] GET /api/v1/dashboard/stats returns todayExecutions, passRate, activeCases, activeSuites
+- [ ] CronParser.parse() correctly calculates next run time for valid cron expressions
+- [ ] CronParser.parse() raises ValueError for invalid cron expressions
+- [ ] Celery Beat schedule configured for scheduled task dispatch
+- [ ] Email notification actually sends via SMTP when triggered
+- [ ] All API endpoints validate request body with marshmallow schemas
+- [ ] Invalid input returns 400 with validation error details
+- [ ] All API endpoints have require_permission decorators applied
+- [ ] User without permission gets 403 on protected endpoints
+- [ ] All datetime.utcnow() replaced with datetime.now(timezone.utc) (0 occurrences remaining)
+- [ ] All Model.query.get(id) replaced with db.session.get(Model, id) (0 occurrences remaining)
+- [ ] All API endpoints use consistent jsonify(success_response(...)) response format
+- [ ] Flask-Migrate initialized and migrations/ directory created
+- [ ] Server Dockerfile Gunicorn entry point correctly loads Flask app factory
+- [ ] docker-compose.yml includes Celery Beat service
+- [ ] docker-compose.yml includes database initialization step
+- [ ] README file paths, technology references, and commands match actual codebase
+- [ ] All new features have corresponding tests
+- [ ] Full test suite passes with 0 failures

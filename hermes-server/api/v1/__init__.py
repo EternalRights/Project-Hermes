@@ -14,6 +14,7 @@ def register_sub_blueprints():
     from api.v1 import reports
     from api.v1 import scheduled_tasks
     from api.v1 import notifications
+    from api.v1 import dashboard
 
     api_v1.register_blueprint(auth.bp)
     api_v1.register_blueprint(projects.bp)
@@ -25,6 +26,7 @@ def register_sub_blueprints():
     api_v1.register_blueprint(reports.bp)
     api_v1.register_blueprint(scheduled_tasks.bp)
     api_v1.register_blueprint(notifications.bp)
+    api_v1.register_blueprint(dashboard.dashboard_bp)
 
 
 register_sub_blueprints()
