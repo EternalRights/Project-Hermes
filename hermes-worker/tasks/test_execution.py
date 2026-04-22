@@ -80,7 +80,7 @@ def _send_notification(notification_config, execution, suite):
 
             if not smtp_host or not sender or not receivers:
                 logger.warning('Email notification config incomplete: %s', notification_config.id)
-                continue
+                return
 
             subject = f"[Hermes] Test Execution {'Passed' if execution.status == 'success' else 'Failed'}"
             body = f"Execution ID: {execution.id}\nStatus: {execution.status}\n"

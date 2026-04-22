@@ -55,10 +55,9 @@ def suite(auth_client, auth_headers, project, test_case):
 
 
 class TestCreateExecution:
-    @patch("api.v1.executions.Celery")
-    def test_create_execution(self, mock_celery_cls, auth_client, auth_headers, suite, environment):
-        mock_celery_inst = MagicMock()
-        mock_celery_cls.return_value = mock_celery_inst
+    @patch("api.v1.executions.celery_app")
+    def test_create_execution(self, mock_celery_app, auth_client, auth_headers, suite, environment):
+        mock_celery_app.send_task = MagicMock()
 
         resp = auth_client.post(
             "/api/v1/executions",
@@ -70,7 +69,7 @@ class TestCreateExecution:
         assert data["suite_id"] == suite["id"]
         assert data["environment_id"] == environment["id"]
         assert data["status"] == "pending"
-        mock_celery_inst.send_task.assert_called_once()
+        mock_celery_app.send_task.assert_called_once()
 
     def test_create_execution_missing_suite_id(self, auth_client, auth_headers, environment):
         resp = auth_client.post(
@@ -88,8 +87,8 @@ class TestCreateExecution:
         )
         assert resp.status_code == 400
 
-    @patch("api.v1.executions.Celery")
-    def test_create_execution_nonexistent_suite(self, mock_celery_cls, auth_client, auth_headers, environment):
+    @patch("api.v1.executions.celery_app")
+    def test_create_execution_nonexistent_suite(self, mock_celery_app, auth_client, auth_headers, environment):
         resp = auth_client.post(
             "/api/v1/executions",
             json={"suite_id": 99999, "environment_id": environment["id"]},
@@ -99,9 +98,9 @@ class TestCreateExecution:
 
 
 class TestGetExecution:
-    @patch("api.v1.executions.Celery")
-    def test_get_execution(self, mock_celery_cls, auth_client, auth_headers, suite, environment):
-        mock_celery_cls.return_value = MagicMock()
+    @patch("api.v1.executions.celery_app")
+    def test_get_execution(self, mock_celery_app, auth_client, auth_headers, suite, environment):
+        mock_celery_app.send_task = MagicMock()
         create_resp = auth_client.post(
             "/api/v1/executions",
             json={"suite_id": suite["id"], "environment_id": environment["id"]},
@@ -121,9 +120,9 @@ class TestGetExecution:
 
 
 class TestListExecutions:
-    @patch("api.v1.executions.Celery")
-    def test_list_executions(self, mock_celery_cls, auth_client, auth_headers, suite, environment):
-        mock_celery_cls.return_value = MagicMock()
+    @patch("api.v1.executions.celery_app")
+    def test_list_executions(self, mock_celery_app, auth_client, auth_headers, suite, environment):
+        mock_celery_app.send_task = MagicMock()
         auth_client.post(
             "/api/v1/executions",
             json={"suite_id": suite["id"], "environment_id": environment["id"]},
@@ -136,9 +135,9 @@ class TestListExecutions:
         assert "items" in data
         assert len(data["items"]) >= 1
 
-    @patch("api.v1.executions.Celery")
-    def test_list_executions_filter_by_suite(self, mock_celery_cls, auth_client, auth_headers, suite, environment):
-        mock_celery_cls.return_value = MagicMock()
+    @patch("api.v1.executions.celery_app")
+    def test_list_executions_filter_by_suite(self, mock_celery_app, auth_client, auth_headers, suite, environment):
+        mock_celery_app.send_task = MagicMock()
         resp = auth_client.get(
             f"/api/v1/executions?suite_id={suite['id']}",
             headers=auth_headers,

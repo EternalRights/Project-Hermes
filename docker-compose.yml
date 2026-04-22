@@ -85,6 +85,28 @@ services:
           cpus: '1.0'
           memory: 512M
 
+  beat:
+    build: ./hermes-worker
+    command: celery -A hermes_worker.celery_app beat --loglevel=info
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - worker
+    networks:
+      - hermes-network
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+
   mysql:
     image: mysql:8.0
     env_file:

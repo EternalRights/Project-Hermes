@@ -15,7 +15,9 @@ def register_sub_blueprints():
     from api.v1 import scheduled_tasks
     from api.v1 import notifications
     from api.v1 import dashboard
+    from api.v1 import health
 
+    api_v1.register_blueprint(health.health_bp)
     api_v1.register_blueprint(auth.bp)
     api_v1.register_blueprint(projects.bp)
     api_v1.register_blueprint(environments.bp)

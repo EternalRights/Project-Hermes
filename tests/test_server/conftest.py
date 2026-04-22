@@ -61,13 +61,47 @@ sys.modules["hermes_server.middleware"] = _mw_mod
 sys.modules["hermes_server"].middleware = _mw_mod
 
 from app import db as _db, jwt as _jwt, cors as _cors
-from models.user import Role as _Role
+from models.user import Role as _Role, Permission as _Permission
 from models.project import Project as _Project, Environment as _Environment, GlobalVariable as _GlobalVariable
 from models.test_case import TestCase as _TestCase, TestSuite as _TestSuite
 from models.execution import TestExecution as _TestExecution
 from models.notification import NotificationConfig as _NotificationConfig
 from models.scheduled_task import ScheduledTask as _ScheduledTask
 from flask import Flask
+
+TEST_PERMISSIONS = [
+    ("project:read", "Read Projects"),
+    ("project:create", "Create Projects"),
+    ("project:update", "Update Projects"),
+    ("project:delete", "Delete Projects"),
+    ("test_case:read", "Read Test Cases"),
+    ("test_case:create", "Create Test Cases"),
+    ("test_case:update", "Update Test Cases"),
+    ("test_case:delete", "Delete Test Cases"),
+    ("test_suite:read", "Read Test Suites"),
+    ("test_suite:create", "Create Test Suites"),
+    ("test_suite:update", "Update Test Suites"),
+    ("test_suite:delete", "Delete Test Suites"),
+    ("execution:read", "Read Executions"),
+    ("execution:create", "Create Executions"),
+    ("environment:read", "Read Environments"),
+    ("environment:create", "Create Environments"),
+    ("environment:update", "Update Environments"),
+    ("environment:delete", "Delete Environments"),
+    ("variable:read", "Read Variables"),
+    ("variable:create", "Create Variables"),
+    ("variable:update", "Update Variables"),
+    ("variable:delete", "Delete Variables"),
+    ("report:read", "Read Reports"),
+    ("scheduled_task:read", "Read Scheduled Tasks"),
+    ("scheduled_task:create", "Create Scheduled Tasks"),
+    ("scheduled_task:update", "Update Scheduled Tasks"),
+    ("scheduled_task:delete", "Delete Scheduled Tasks"),
+    ("notification:read", "Read Notifications"),
+    ("notification:create", "Create Notifications"),
+    ("notification:update", "Update Notifications"),
+    ("notification:delete", "Delete Notifications"),
+]
 
 
 def _create_test_app():
@@ -104,6 +138,8 @@ def _create_test_app():
     from api.v1.reports import bp as reports_bp
     from api.v1.scheduled_tasks import bp as scheduled_tasks_bp
     from api.v1.notifications import bp as notifications_bp
+    from api.v1.health import health_bp
+    from api.v1.dashboard import dashboard_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(projects_bp)
@@ -115,6 +151,8 @@ def _create_test_app():
     app.register_blueprint(reports_bp)
     app.register_blueprint(scheduled_tasks_bp)
     app.register_blueprint(notifications_bp)
+    app.register_blueprint(health_bp)
+    app.register_blueprint(dashboard_bp)
 
     return app
 
@@ -139,6 +177,10 @@ def auth_client(client):
     with client.application.app_context():
         role = _Role(name="test_engineer", description="Test Engineer")
         _db.session.add(role)
+        for code, name in TEST_PERMISSIONS:
+            perm = _Permission(code=code, name=name)
+            _db.session.add(perm)
+            role.permissions.append(perm)
         _db.session.commit()
     return client
 
