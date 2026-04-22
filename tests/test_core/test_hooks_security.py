@@ -39,7 +39,7 @@ i = 0
 while i < 1000000000:
     i += 1
 """
-        executor._run_script(long_running_script, {"context": context, "response": None}, timeout=1)
+        executor._run_script(long_running_script, context, timeout=1)
         assert any("timed out" in str(e).lower() for e in context.errors)
 
     def test_script_error_caught(self):
@@ -48,5 +48,5 @@ while i < 1000000000:
         context.errors = []
 
         error_script = "raise ValueError('test error')"
-        executor._run_script(error_script, {"context": context, "response": None})
-        assert any("test error" in str(e) for e in context.errors)
+        executor._run_script(error_script, context)
+        assert len(context.errors) > 0

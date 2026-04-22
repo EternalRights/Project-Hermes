@@ -46,11 +46,13 @@ class TestExpiredJWTToken:
 class TestRBACEnforcement:
     def test_user_without_permission_denied(self, auth_client, auth_headers):
         with auth_client.application.app_context():
-            from models.user import User, Role, Permission
+            from models.user import User, Role
             from app import db
 
             user = User(username="noperm_user", email="noperm@example.com")
             user.set_password("Password1")
+            role = Role(name="no_permissions", description="No permissions role")
+            user.roles.append(role)
             db.session.add(user)
             db.session.commit()
 
@@ -63,7 +65,7 @@ class TestRBACEnforcement:
         user_headers = {"Authorization": f"Bearer {user_token}"}
 
         resp = auth_client.get("/api/v1/projects", headers=user_headers)
-        assert resp.status_code == 200
+        assert resp.status_code == 403
 
 
 class TestSQLInjection:
