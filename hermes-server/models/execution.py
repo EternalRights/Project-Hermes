@@ -28,6 +28,28 @@ class TestExecution(db.Model):
     creator = db.relationship("User", backref=db.backref("created_executions", lazy="dynamic"))
     step_results = db.relationship("TestStepResult", backref="execution", lazy="dynamic")
 
+    def to_dict(self, include_steps=False):
+        data = {
+            'id': self.id,
+            'plan_id': self.plan_id,
+            'suite_id': self.suite_id,
+            'environment_id': self.environment_id,
+            'status': self.status,
+            'total_count': self.total_count,
+            'pass_count': self.pass_count,
+            'fail_count': self.fail_count,
+            'error_count': self.error_count,
+            'skip_count': self.skip_count,
+            'duration': self.duration,
+            'started_at': self.started_at.isoformat() if self.started_at else None,
+            'finished_at': self.finished_at.isoformat() if self.finished_at else None,
+            'created_by': self.created_by,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
+        if include_steps:
+            data['step_results'] = [s.to_dict() for s in self.step_results.order_by(TestStepResult.id.asc()).all()]
+        return data
+
 
 class TestStepResult(db.Model):
     __tablename__ = "test_step_result"
@@ -48,3 +70,21 @@ class TestStepResult(db.Model):
     finished_at = db.Column(db.DateTime)
 
     test_case = db.relationship("TestCase", backref=db.backref("step_results", lazy="dynamic"))
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'execution_id': self.execution_id,
+            'case_id': self.case_id,
+            'case_name': self.case_name,
+            'status': self.status,
+            'request_config': self.request_config,
+            'response_status_code': self.response_status_code,
+            'response_headers': self.response_headers,
+            'response_body': self.response_body,
+            'response_time': self.response_time,
+            'assertions_result': self.assertions_result,
+            'error_message': self.error_message,
+            'started_at': self.started_at.isoformat() if self.started_at else None,
+            'finished_at': self.finished_at.isoformat() if self.finished_at else None,
+        }

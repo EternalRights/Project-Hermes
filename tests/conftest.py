@@ -5,6 +5,17 @@ import types
 import pytest
 
 
+collect_ignore_glob = ["**/hermes_server/models/*", "**/hermes_core/executor/*"]
+
+
+def pytest_collection_modifyitems(session, config, items):
+    skip_names = {
+        "TestCase", "TestCaseResult", "TestCaseRunner",
+        "TestSuite", "TestExecution", "TestStepResult",
+    }
+    items[:] = [item for item in items if item.cls is None or item.cls.__name__ not in skip_names]
+
+
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 HERMES_CORE_DIR = os.path.join(PROJECT_ROOT, "hermes-core")

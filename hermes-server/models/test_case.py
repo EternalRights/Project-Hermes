@@ -68,6 +68,18 @@ class TestSuite(db.Model):
     creator = db.relationship("User", backref=db.backref("created_test_suites", lazy="dynamic"))
     suite_cases = db.relationship("TestSuiteCase", backref="suite", lazy="dynamic")
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'project_id': self.project_id,
+            'description': self.description,
+            'execution_mode': self.execution_mode,
+            'created_by': self.created_by,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
 
 class TestSuiteCase(db.Model):
     __tablename__ = "test_suite_case"
@@ -79,6 +91,18 @@ class TestSuiteCase(db.Model):
     is_enabled = db.Column(db.Boolean, default=True)
 
     test_case = db.relationship("TestCase", backref=db.backref("suite_entries", lazy="dynamic"))
+
+    def to_dict(self):
+        result = {
+            'id': self.id,
+            'suite_id': self.suite_id,
+            'case_id': self.case_id,
+            'sort_order': self.sort_order,
+            'is_enabled': self.is_enabled,
+        }
+        if self.test_case:
+            result['test_case'] = self.test_case.to_dict()
+        return result
 
 
 class TestPlan(db.Model):
@@ -98,3 +122,16 @@ class TestPlan(db.Model):
     suite = db.relationship("TestSuite", backref=db.backref("test_plans", lazy="dynamic"))
     environment = db.relationship("Environment", backref=db.backref("test_plans", lazy="dynamic"))
     creator = db.relationship("User", backref=db.backref("created_test_plans", lazy="dynamic"))
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'project_id': self.project_id,
+            'suite_id': self.suite_id,
+            'environment_id': self.environment_id,
+            'schedule_config': self.schedule_config,
+            'created_by': self.created_by,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }

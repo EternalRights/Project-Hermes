@@ -15,3 +15,14 @@ class DataSource(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
     project = db.relationship("Project", backref=db.backref("data_sources", lazy="dynamic"))
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'project_id': self.project_id,
+            'type': self.type,
+            'config': self.config,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }

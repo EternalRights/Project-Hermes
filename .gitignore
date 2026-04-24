@@ -8,6 +8,8 @@ dist/
 build/
 .eggs/
 
+.trae/
+
 .env
 .env.local
 .env.*.local

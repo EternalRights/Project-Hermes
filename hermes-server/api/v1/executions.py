@@ -2,10 +2,9 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from hermes_worker.celery_app import celery_app
-from hermes_server.app import db
-from hermes_server.models.execution import TestExecution, TestStepResult
-from hermes_server.models.test_case import TestSuite, TestSuiteCase
+from hermes_server.services.execution_service import ExecutionService
 from hermes_server.app.response import success_response, error_response, paginate_response
+from hermes_server.app.error_handlers import HermesBusinessError
 from hermes_server.middleware.permission import require_permission
 
 bp = Blueprint('executions', __name__, url_prefix='/api/v1/executions')
@@ -19,90 +18,29 @@ def create_execution():
     if not data:
         return jsonify(error_response(message='request body is required')), 400
 
-    suite_id = data.get('suite_id')
-    environment_id = data.get('environment_id')
-    if suite_id is None or environment_id is None:
-        return jsonify(error_response(message='suite_id and environment_id are required')), 400
-
-    suite = db.session.get(TestSuite, suite_id)
-    if not suite:
-        return jsonify(error_response(message='test suite not found', code=404)), 404
-
     current_user_id = get_jwt_identity()
+    try:
+        execution = ExecutionService.create_execution(data, current_user_id)
 
-    execution = TestExecution(
-        suite_id=suite_id,
-        environment_id=environment_id,
-        plan_id=data.get('plan_id'),
-        status='pending',
-        created_by=current_user_id,
-    )
+        celery_app.send_task(
+            'hermes_worker.tasks.execute_test_suite',
+            args=[execution.id, execution.suite_id, execution.environment_id],
+        )
 
-    db.session.add(execution)
-    db.session.commit()
-
-    celery_app.send_task(
-        'hermes_worker.tasks.execute_test_suite',
-        args=[execution.id, execution.suite_id, execution.environment_id],
-    )
-
-    return jsonify(success_response(data={
-        'id': execution.id,
-        'suite_id': execution.suite_id,
-        'environment_id': execution.environment_id,
-        'plan_id': execution.plan_id,
-        'status': execution.status,
-        'created_by': execution.created_by,
-        'created_at': execution.created_at.isoformat() if execution.created_at else None,
-    }, code=201)), 201
+        return jsonify(success_response(data=execution.to_dict(), code=201)), 201
+    except HermesBusinessError as e:
+        return jsonify(error_response(message=e.message, code=e.code)), e.code
 
 
 @bp.route('/<int:execution_id>', methods=['GET'])
 @jwt_required()
 @require_permission('execution:read')
 def get_execution(execution_id):
-    execution = db.session.get(TestExecution, execution_id)
-    if not execution:
-        return jsonify(error_response(message='execution not found', code=404)), 404
-
-    step_results = execution.step_results.order_by(TestStepResult.id.asc()).all()
-    step_list = []
-    for step in step_results:
-        step_list.append({
-            'id': step.id,
-            'execution_id': step.execution_id,
-            'case_id': step.case_id,
-            'case_name': step.case_name,
-            'status': step.status,
-            'request_config': step.request_config,
-            'response_status_code': step.response_status_code,
-            'response_headers': step.response_headers,
-            'response_body': step.response_body,
-            'response_time': step.response_time,
-            'assertions_result': step.assertions_result,
-            'error_message': step.error_message,
-            'started_at': step.started_at.isoformat() if step.started_at else None,
-            'finished_at': step.finished_at.isoformat() if step.finished_at else None,
-        })
-
-    return jsonify(success_response(data={
-        'id': execution.id,
-        'plan_id': execution.plan_id,
-        'suite_id': execution.suite_id,
-        'environment_id': execution.environment_id,
-        'status': execution.status,
-        'total_count': execution.total_count,
-        'pass_count': execution.pass_count,
-        'fail_count': execution.fail_count,
-        'error_count': execution.error_count,
-        'skip_count': execution.skip_count,
-        'duration': execution.duration,
-        'started_at': execution.started_at.isoformat() if execution.started_at else None,
-        'finished_at': execution.finished_at.isoformat() if execution.finished_at else None,
-        'created_by': execution.created_by,
-        'created_at': execution.created_at.isoformat() if execution.created_at else None,
-        'step_results': step_list,
-    }))
+    try:
+        data = ExecutionService.get_execution_detail(execution_id)
+        return jsonify(success_response(data=data))
+    except HermesBusinessError as e:
+        return jsonify(error_response(message=e.message, code=e.code)), e.code
 
 
 @bp.route('', methods=['GET'])
@@ -114,33 +52,10 @@ def get_executions():
     suite_id = request.args.get('suite_id', type=int)
     status = request.args.get('status', type=str)
 
-    query = TestExecution.query
-
-    if suite_id is not None:
-        query = query.filter(TestExecution.suite_id == suite_id)
-    if status:
-        query = query.filter(TestExecution.status == status)
-
-    query = query.order_by(TestExecution.id.desc())
+    query = ExecutionService.list_executions(
+        page=page, per_page=per_page, suite_id=suite_id, status=status,
+    )
     result = paginate_response(query, page, per_page)
-    items = []
-    for execution in result['items']:
-        items.append({
-            'id': execution.id,
-            'plan_id': execution.plan_id,
-            'suite_id': execution.suite_id,
-            'environment_id': execution.environment_id,
-            'status': execution.status,
-            'total_count': execution.total_count,
-            'pass_count': execution.pass_count,
-            'fail_count': execution.fail_count,
-            'error_count': execution.error_count,
-            'skip_count': execution.skip_count,
-            'duration': execution.duration,
-            'started_at': execution.started_at.isoformat() if execution.started_at else None,
-            'finished_at': execution.finished_at.isoformat() if execution.finished_at else None,
-            'created_by': execution.created_by,
-            'created_at': execution.created_at.isoformat() if execution.created_at else None,
-        })
+    items = [execution.to_dict() for execution in result['items']]
     result['items'] = items
     return jsonify(success_response(data=result))
